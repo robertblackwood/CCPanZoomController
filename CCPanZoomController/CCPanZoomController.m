@@ -256,6 +256,10 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
 -(void) disable
 {
 	[[CCTouchDispatcher sharedDispatcher] removeDelegate:self];
+
+    //Clean up any stray touches
+    for (UITouch *touch in _touches)
+        [self ccTouchCancelled:touch withEvent:nil];
 }
 
 - (void) updateTime:(ccTime)dt
