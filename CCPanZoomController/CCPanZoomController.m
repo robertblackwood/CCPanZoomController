@@ -248,14 +248,24 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
 
 - (void) enableWithTouchPriority:(int)priority swallowsTouches:(BOOL)swallowsTouches
 {
+#if (COCOS2D_VERSION < 0x00020000)
 	[[CCTouchDispatcher sharedDispatcher] addTargetedDelegate:self
 													 priority:priority 
 											  swallowsTouches:swallowsTouches];
+#else
+    [[[CCDirector sharedDirector] touchDispatcher] addTargetedDelegate:self
+                                                              priority:priority
+                                                       swallowsTouches:swallowsTouches];
+#endif
 }
 
 -(void) disable
 {
+#if (COCOS2D_VERSION < 0x00020000)
 	[[CCTouchDispatcher sharedDispatcher] removeDelegate:self];
+#else
+    [[[CCDirector sharedDirector] touchDispatcher]removeDelegate:self];
+#endif
 
     //Clean up any stray touches
     for (UITouch *touch in _touches)
@@ -450,7 +460,11 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
 	_firstTouch = pos;
 	
     //keep track of time passed
+#if (COCOS2D_VERSION < 0x00020000)
 	[[CCScheduler sharedScheduler] scheduleSelector:@selector(updateTime:) forTarget:self interval:0 paused:NO];
+#else
+    [[[CCDirector sharedDirector] scheduler] scheduleSelector:@selector(updateTime:) forTarget:self interval:0 paused:NO];
+#endif
 }
 
 - (void) moveScroll:(CGPoint)pos
@@ -468,7 +482,11 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
 - (void) endScroll:(CGPoint)pos
 {    
     //unschedule our time keeper
+#if (COCOS2D_VERSION < 0x00020000)
 	[[CCScheduler sharedScheduler] unscheduleSelector:@selector(updateTime:) forTarget:self];
+#else
+    [[[CCDirector sharedDirector] scheduler] unscheduleSelector:@selector(updateTime:) forTarget:self];
+#endif
 	
     //Only perform a velocity scroll if we have a good amount of history
 	if (_timePointStampCounter > 3)
