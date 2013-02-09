@@ -19,16 +19,9 @@
  * SOFTWARE.
  */
 
-//V7.0
+//V8.0
 
 #import "cocos2d.h"
-
-#define kCCPanZoomControllerHistoryCount 12
-
-typedef struct {
-    float time;
-    CGPoint pt;
-} CCPanZoomTimePointStamp;
 
 @interface CCPanZoomController : NSObject<CCTouchOneByOneDelegate>
 {	
@@ -55,13 +48,7 @@ typedef struct {
     float   _pinchDamping;
     float   _pinchDistanceThreshold;
     float   _doubleTapZoomDuration;
-    
-    //internals    
-    float	_time;
-    int     _timePointStampCounter;
-    CCPanZoomTimePointStamp _history[kCCPanZoomControllerHistoryCount];
-
-	
+    	
 	//touches
 	CGPoint _firstTouch;
 	float   _firstLength;
@@ -70,8 +57,8 @@ typedef struct {
     //keep track of touches in order
 	NSMutableArray *_touches;
     
-    //keep around swipe action to get rid of it if needed
-    CCAction *_lastScrollAction;
+    //momentum
+    CGPoint _momentum;
 }
 
 @property (readwrite, assign) CGRect    boundingRect;   /*!< The max bounds you want to scroll */
@@ -81,8 +68,6 @@ typedef struct {
 @property (readwrite, assign) float     zoomRate;       /*!< How much to zoom based on movement of pinch */
 @property (readwrite, assign) float     zoomInLimit;    /*!< The smallest zoom level */
 @property (readwrite, assign) float     zoomOutLimit;   /*!< The hightest zoom level */
-@property (readwrite, assign) float     swipeVelocityMultiplier; /*!< The velocity factor of the swipe's scroll action */
-@property (readwrite, assign) float     scrollDuration; /*!< Duration of the scroll action after a swipe */
 @property (readwrite, assign) float     scrollRate;     /*!< Rate of the easing part of the scroll action after a swipe */
 @property (readwrite, assign) float     scrollDamping;  /*!< When scrolling around, this will dampen the movement */
 @property (readwrite, assign) float     zoomCenteringDamping;   /*!< Dampen the centering motion of the zoom */

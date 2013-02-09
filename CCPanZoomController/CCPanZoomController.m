@@ -36,8 +36,6 @@
 @interface CCPanZoomController (Private)
 - (void) updateTime:(ccTime)dt;
 - (CGPoint) boundPos:(CGPoint)pos;
-- (void) recordScrollPoint:(UITouch*)touch;
-- (CGPoint) getHistoricSpeed;
 - (void) handleDoubleTapAt:(CGPoint)pt;
 
 - (void) beginScroll:(CGPoint)pos;
@@ -108,8 +106,6 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
 @synthesize zoomRate = _zoomRate;
 @synthesize zoomInLimit = _zoomInLimit;
 @synthesize zoomOutLimit = _zoomOutLimit;
-@synthesize swipeVelocityMultiplier = _swipeVelocityMultiplier;
-@synthesize scrollDuration = _scrollDuration;
 @synthesize scrollRate = _scrollRate;
 @synthesize scrollDamping = _scrollDamping;
 @synthesize zoomCenteringDamping = _zoomCenteringDamping;
@@ -146,10 +142,8 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
     _zoomRate = 1/500.0f;
     _zoomInLimit = 1.0f;
     _zoomOutLimit = 0.5f;
-    _swipeVelocityMultiplier = 400;
-    _scrollDuration = .5;
-    _scrollRate = 3;
-    _scrollDamping = .4;
+    _scrollRate = 9;
+    _scrollDamping = .85;
     _zoomCenteringDamping = .1;
     _pinchDamping = .9;
     _pinchDistanceThreshold = 3;
@@ -252,10 +246,12 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
 	[[CCTouchDispatcher sharedDispatcher] addTargetedDelegate:self
 													 priority:priority 
 											  swallowsTouches:swallowsTouches];
+	[[CCScheduler sharedScheduler] scheduleSelector:@selector(updateTime:) forTarget:self interval:0 paused:NO];
 #else
     [[[CCDirector sharedDirector] touchDispatcher] addTargetedDelegate:self
                                                               priority:priority
                                                        swallowsTouches:swallowsTouches];
+    [[[CCDirector sharedDirector] scheduler] scheduleSelector:@selector(updateTime:) forTarget:self interval:0 paused:NO];
 #endif
 }
 
@@ -263,19 +259,30 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
 {
 #if (COCOS2D_VERSION < 0x00020000)
 	[[CCTouchDispatcher sharedDispatcher] removeDelegate:self];
+	[[CCScheduler sharedScheduler] unscheduleSelector:@selector(updateTime:) forTarget:self];
 #else
     [[[CCDirector sharedDirector] touchDispatcher]removeDelegate:self];
+    [[[CCDirector sharedDirector] scheduler] unscheduleSelector:@selector(updateTime:) forTarget:self];
 #endif
-
+    
     //Clean up any stray touches
     for (UITouch *touch in _touches)
         [self ccTouchCancelled:touch withEvent:nil];
 }
 
 - (void) updateTime:(ccTime)dt
-{
-    //keep the time
-	_time += dt;
+{    
+    float degrade = dt*(_momentum.x*_scrollRate);
+    _momentum.x -= degrade;
+    
+    degrade = dt*(_momentum.y*_scrollRate);
+    _momentum.y -= degrade;
+    
+    if (![_touches count])
+    {
+        // Apply momentum
+        [self updatePosition:ccpAdd(_node.position, ccpMult(_momentum, _scrollDamping))];
+    }
 }
 
 -(BOOL) ccTouchBegan:(UITouch*)touch withEvent:(UIEvent *)event
@@ -287,7 +294,7 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
 	if (multitouch)
 	{
         //reset history so auto scroll doesn't happen
-        _timePointStampCounter = 0;
+        _momentum = CGPointZero;
         
         //end the first touche's panning
 		[self endScroll:_firstTouch];
@@ -300,9 +307,6 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
 	}
 	else 
     {
-        //record the point for determining velocity
-        [self recordScrollPoint:touch];
-		
         //Start scrolling
         [self beginScroll:[_node convertTouchToNodeSpace:touch]];
     }
@@ -323,10 +327,7 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
 		[self moveZoom:pt1 otherPt:pt2];
 	}
 	else
-	{	
-        //record points while moving
-        [self recordScrollPoint:touch];
-        
+	{
         //pan around
 		[self moveScroll:[_node convertTouchToNodeSpace:touch]];
 	}
@@ -353,10 +354,7 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
     
     //one finger case (panning)
 	else
-	{
-        //record the final point
-        [self recordScrollPoint:touch];
-		
+	{		
         //end scroll
         CGPoint pt = [_node convertTouchToNodeSpace:touch];
 		[self endScroll:pt];
@@ -400,77 +398,24 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
     [_node runAction:[CCPanZoomControllerScale actionWithDuration:duration scale:scale controller:self point:pt]];
 }
 
-- (void) recordScrollPoint:(UITouch*)touch
-{
-    //Record the touch point and time
-    CGPoint pt = [[CCDirector sharedDirector] convertToGL:[touch locationInView:[touch view]]];
-    CCPanZoomTimePointStamp *record = &_history[_timePointStampCounter++ % kCCPanZoomControllerHistoryCount];
-    record->time = _time;
-    record->pt = pt;
-}
-
-- (CGPoint) getHistoricSpeed
-{
-    CGPoint lastPt;
-    CGPoint tPt = ccp(0,0);
-    CGPoint speed = ccp(0,0);
-    float   lastTime;
-    int     count = 0;
-
-    //Walk thru our history
-    for (int i = 0; i < kCCPanZoomControllerHistoryCount && i < _timePointStampCounter; i++)
-    {
-        CCPanZoomTimePointStamp *record = &_history[(_timePointStampCounter-i-1) % kCCPanZoomControllerHistoryCount];
-        
-        CGPoint pt = record->pt;
-        float time = record->time;
-        
-        //Only calculate after first
-        if (i != 0)
-        {
-            //Sentinels: stop if we have large time chunks
-            if ((lastTime-time) > .25)
-                break;
-            //or sporadic vectors past an amount of history
-            if (i > 3 && vectorsDeviation(lastPt, pt) > .1)
-                break;
-            
-            //Get a vector between two touches, but weight it with the time difference,
-            //this will eliminate small quick movements and favor sweeping touches
-            tPt = ccpAdd(tPt, ccpMult(ccpSub(lastPt, pt), (lastTime-time)));
-            count++;
-        }
-        
-        lastPt = pt;
-        lastTime = time;
-    }
-    
-    //Calculate speed
-    if (count)
-        speed = ccpMult(tPt, 1.0f/count);
-    
-    return speed;
-}
 
 - (void) beginScroll:(CGPoint)pos
 {
     //reset
-	_time = 0;
-    _timePointStampCounter = 0;
+	_momentum = CGPointZero;
 	_firstTouch = pos;
-	
-    //keep track of time passed
-#if (COCOS2D_VERSION < 0x00020000)
-	[[CCScheduler sharedScheduler] scheduleSelector:@selector(updateTime:) forTarget:self interval:0 paused:NO];
-#else
-    [[[CCDirector sharedDirector] scheduler] scheduleSelector:@selector(updateTime:) forTarget:self interval:0 paused:NO];
-#endif
 }
 
 - (void) moveScroll:(CGPoint)pos
 {
-    //dampen value
+    // diff
 	pos = ccpSub(pos, _firstTouch);
+    
+    // apply momentum
+    _momentum.x += pos.x;
+    _momentum.y += pos.y;
+
+    //dampen value
 	pos = ccpMult(pos, _scrollDamping * _node.scale);
     
     //debug
@@ -480,40 +425,7 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
 }
 
 - (void) endScroll:(CGPoint)pos
-{    
-    //unschedule our time keeper
-#if (COCOS2D_VERSION < 0x00020000)
-	[[CCScheduler sharedScheduler] unscheduleSelector:@selector(updateTime:) forTarget:self];
-#else
-    [[[CCDirector sharedDirector] scheduler] unscheduleSelector:@selector(updateTime:) forTarget:self];
-#endif
-	
-    //Only perform a velocity scroll if we have a good amount of history
-	if (_timePointStampCounter > 3)
-	{
-        //calculate velocity
-        CGPoint velocity = ccpMult([self getHistoricSpeed], _swipeVelocityMultiplier * _node.scale);
-
-        //Make sure we have a reasonable speed (more than 5 pts away)
-		if (ccpLengthSQ(velocity) > 5*5)
-		{
-            //caculate  position of swipe action
-			CGPoint newPos = ccpAdd(_node.position, velocity);
-			newPos = [self boundPos:newPos];
-			
-            //create the action
-			id moveTo = [CCMoveTo actionWithDuration:_scrollDuration position:newPos];
-			id ease = [CCEaseOut actionWithAction:moveTo rate:_scrollRate];
-			
-            //unconditional stop; cocos handles this properly
-			[_node stopAction:_lastScrollAction];
-			[_node runAction:ease];
-            
-            //release our last action since we retain it below
-            [_lastScrollAction release];
-            _lastScrollAction = [ease retain];
-		}
-	}
+{
 }
 
 - (void) beginZoom:(CGPoint)pt otherPt:(CGPoint)pt2
