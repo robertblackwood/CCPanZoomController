@@ -1,0 +1,42 @@
+CCPanZoomController
+=============
+-------------
+
+CCPanZoomController is an iOS drop-in class for cocos2d projects that lets you pan and zoom a CCNode within a given bounds using standard gestures.
+
+------------------------------------
+Adding CCPanZoomController to your project
+====================================
+
+Source files
+------------
+
+The simplest way to add the CCPanZoomController to your project is to directly add the `CCPanZoomController.h` and `CCPanZoomController.m` source files to your project.
+
+1. Open your project in Xcode, than drag and drop `CCPanZoomController.h` and `CCPanZoomController.m` onto your project (use the "Product Navigator view"). Make sure to select Copy items when asked if you extracted the code archive outside of your project. 
+2. Include CCPanZoomController wherever you need it with `#import "CCPanZoomController.h"`.
+
+
+-----
+Usage
+=====
+
+```objective-c
+    CCPanZoomController *controller = [[CCPanZoomController controllerWithNode:self] retain];
+    controller.boundingRect = CGRectMake(0,0,1000,1000);
+    controller.zoomOutLimit = _controller.optimalZoomOutLimit;
+    controller.zoomInLimit = 2.0f;
+    
+    [controller enableWithTouchPriority:0 swallowsTouches:YES];
+
+    //Make sure you disable onExit or similar.
+```
+
+If you need to configure the HUD you can do this by using the MBProgressHUD reference that showHUDAddedTo:animated: returns. 
+
+-------
+License
+=======
+
+This code is distributed under the terms and conditions of the MIT license. 
+
