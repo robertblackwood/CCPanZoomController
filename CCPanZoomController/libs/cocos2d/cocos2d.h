@@ -2,17 +2,18 @@
  * cocos2d for iPhone: http://www.cocos2d-iphone.org
  *
  * Copyright (c) 2008-2010 Ricardo Quesada
- * 
+ * Copyright (c) 2011 Zynga Inc.
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -33,15 +34,14 @@
  *
  * <hr>
  *
- * @todo A native english speaker should check the grammar. We need your help!
+ * @todo A native English speaker should check the grammar. We need your help!
  *
  */
 
 // 0x00 HI ME LO
-// 00   01 00 00
-#define COCOS2D_VERSION 0x00010000
+// 00   02 01 00
+#define COCOS2D_VERSION 0x00020100
 
-#import <Availability.h>
 
 //
 // all cocos2d include files
@@ -61,6 +61,7 @@
 #import "CCActionGrid.h"
 #import "CCActionProgressTimer.h"
 #import "CCActionPageTurn3D.h"
+#import "CCActionCatmullRom.h"
 
 #import "CCAnimation.h"
 #import "CCAnimationCache.h"
@@ -74,9 +75,9 @@
 #import "CCLabelAtlas.h"
 
 #import "CCParticleSystem.h"
-#import "CCParticleSystemPoint.h"
 #import "CCParticleSystemQuad.h"
 #import "CCParticleExamples.h"
+#import "CCParticleBatchNode.h"
 
 #import "CCTexture2D.h"
 #import "CCTexturePVR.h"
@@ -85,7 +86,7 @@
 
 #import "CCTransition.h"
 #import "CCTransitionPageTurn.h"
-#import "CCTransitionRadial.h"
+#import "CCTransitionProgress.h"
 
 #import "CCTMXTiledMap.h"
 #import "CCTMXLayer.h"
@@ -99,10 +100,10 @@
 #import "CCDrawingPrimitives.h"
 #import "CCScene.h"
 #import "CCScheduler.h"
-#import "CCBlockSupport.h"
 #import "CCCamera.h"
 #import "CCProtocols.h"
 #import "CCNode.h"
+#import "CCNode+Debug.h"
 #import "CCDirector.h"
 #import "CCAtlasNode.h"
 #import "CCGrabber.h"
@@ -111,6 +112,23 @@
 #import "CCRenderTexture.h"
 #import "CCMotionStreak.h"
 #import "CCConfiguration.h"
+#import "CCDrawNode.h"
+#import "CCClippingNode.h"
+
+#import "ccFPSImages.h"
+
+// Shaders
+#import "CCGLProgram.h"
+#import "ccGLStateCache.h"
+#import "CCShaderCache.h"
+#import "ccShaders.h"
+
+// Physics integration
+// Box2d integration should include these 2 files manually
+#if CC_ENABLE_CHIPMUNK_INTEGRATION
+#import "CCPhysicsSprite.h"
+#import "CCPhysicsDebugNode.h"
+#endif
 
 //
 // cocos2d macros
@@ -118,21 +136,27 @@
 #import "ccTypes.h"
 #import "ccMacros.h"
 
+//
+// Deprecated methods/classes/functions since v1.0
+//
+#import "ccDeprecated.h"
 
 // Platform common
 #import "Platforms/CCGL.h"
 #import "Platforms/CCNS.h"
 
-#ifdef __IPHONE_OS_VERSION_MAX_ALLOWED
+#ifdef __CC_PLATFORM_IOS
 #import "Platforms/iOS/CCTouchDispatcher.h"
 #import "Platforms/iOS/CCTouchDelegateProtocol.h"
 #import "Platforms/iOS/CCTouchHandler.h"
-#import "Platforms/iOS/EAGLView.h"
+#import "Platforms/iOS/CCGLView.h"
 #import "Platforms/iOS/CCDirectorIOS.h"
 
-#elif defined(__MAC_OS_X_VERSION_MAX_ALLOWED)
-#import "Platforms/Mac/MacGLView.h"
+#elif defined(__CC_PLATFORM_MAC)
+#import "Platforms/Mac/CCGLView.h"
 #import "Platforms/Mac/CCDirectorMac.h"
+#import "Platforms/Mac/CCWindow.h"
+#import "Platforms/Mac/CCEventDispatcher.h"
 #endif
 
 //
@@ -144,16 +168,33 @@
 #import "Support/ccCArray.h"
 #import "Support/CCArray.h"
 #import "Support/ccUtils.h"
-
-#if CC_ENABLE_PROFILERS
+#import "Support/TransformUtils.h"
 #import "Support/CCProfiling.h"
-#endif // CC_ENABLE_PROFILERS
+#import "Support/NSThread+performBlock.h"
+#import "Support/uthash.h"
+#import "Support/utlist.h"
 
+//
+// external
+//
+#import "kazmath/kazmath.h"
+#import "kazmath/GL/matrix.h"
+
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // free functions
 NSString * cocos2dVersion(void);
 
-#ifdef __IPHONE_OS_VERSION_MAX_ALLOWED
+#ifdef __cplusplus
+}
+#endif
+
+	
+#ifdef __CC_PLATFORM_IOS
 #ifndef __IPHONE_4_0
 #error "If you are targeting iPad, you should set BASE SDK = 4.0 (or 4.1, or 4.2), and set the 'iOS deploy target' = 3.2"
 #endif

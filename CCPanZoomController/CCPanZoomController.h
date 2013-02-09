@@ -30,7 +30,7 @@ typedef struct {
     CGPoint pt;
 } CCPanZoomTimePointStamp;
 
-@interface CCPanZoomController : NSObject<CCTargetedTouchDelegate>
+@interface CCPanZoomController : NSObject<CCTouchOneByOneDelegate>
 {	
     //properties
     CCNode  *_node;

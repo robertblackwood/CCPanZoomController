@@ -150,7 +150,7 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
     _scrollDuration = .5;
     _scrollRate = 3;
     _scrollDamping = .4;
-    _zoomCenteringDamping = .9;
+    _zoomCenteringDamping = .1;
     _pinchDamping = .9;
     _pinchDistanceThreshold = 3;
     _doubleTapZoomDuration = .2;
@@ -537,23 +537,39 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
         return;
 
 	//calculate new scale
-	float factor = diff * _zoomRate * _pinchDamping;
-	float newScale = _oldScale + factor;
+	float factor = diff * _zoomRate;
+	float scaleTo = (_oldScale + factor);
+    float absScaleTo = fabs(scaleTo);
+    float mult = absScaleTo/scaleTo;
+    
+    //paranoia
+    if (!_oldScale)
+        _oldScale = 0.001;
+    
+    //dampen
+    float newScale = _oldScale*mult*pow(absScaleTo/_oldScale, _pinchDamping);
 	
-    //bound scale
-	if (newScale > _zoomInLimit)
-		newScale = _zoomInLimit;
-	else if (newScale < _zoomOutLimit)
-		newScale = _zoomOutLimit;
-    
-    //set the new scale
-	_node.scale = newScale;
-    
-    //center on midpoint of pinch
-    if (_centerOnPinch)
-        [self centerOnPoint:_firstTouch damping:_zoomCenteringDamping];
+    if (isnormal(newScale))
+    {
+        //bound scale
+        if (newScale > _zoomInLimit)
+            newScale = _zoomInLimit;
+        else if (newScale < _zoomOutLimit)
+            newScale = _zoomOutLimit;
+        
+        //set the new scale
+        _node.scale = newScale;
+        
+        //NSLog(@"Scale:%.2f", newScale);
+        
+        //center on midpoint of pinch
+        if (_centerOnPinch)
+            [self centerOnPoint:_firstTouch damping:_zoomCenteringDamping];
+        else
+            [self updatePosition:_node.position];
+    }
     else
-        [self updatePosition:_node.position];
+        NSLog(@"CCPanZoomController - Bad scale!");
 }
 
 - (void) centerOnPoint:(CGPoint)pt
@@ -566,12 +582,12 @@ CGPoint pt2 = [touch2 locationInView:[touch view]]
     //calc the difference between the window middle and the pt, apply the damping
     CGPoint mid = [_node convertToNodeSpace:ccpMidpoint(_winTr, _winBl)];
     CGPoint diff = ccpMult(ccpSub(mid, pt), damping);
+    CGPoint oldPos = _node.position;
+    CGPoint newPos = ccpAdd(oldPos, diff);
     
-    //NSLog(@"Centering by: (%.2f, %.2f)", diff.x, diff.y);
-    
-    NSLog(@"y:%.2f", diff.y);
-        
-    [self updatePosition:ccpAdd(_node.position, diff)];
+    //NSLog(@"Centering on: (%.2f, %.2f)", newPos.x, newPos.y);
+            
+    [self updatePosition:newPos];
 }
 
 - (void) centerOnPoint:(CGPoint)pt duration:(float)duration rate:(float)rate

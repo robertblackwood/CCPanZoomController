@@ -2,17 +2,18 @@
  * cocos2d for iPhone: http://www.cocos2d-iphone.org
  *
  * Copyright (c) 2008-2010 Ricardo Quesada
- * 
+ * Copyright (c) 2011 Zynga Inc.
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -42,13 +43,19 @@
  */
 typedef enum {
 	/// An horizontal orientation where the Left is nearer
-	kOrientationLeftOver = 0,
+	kCCTransitionOrientationLeftOver = 0,
 	/// An horizontal orientation where the Right is nearer
-	kOrientationRightOver = 1,
+	kCCTransitionOrientationRightOver = 1,
 	/// A vertical orientation where the Up is nearer
-	kOrientationUpOver = 0,
+	kCCTransitionOrientationUpOver = 0,
 	/// A vertical orientation where the Bottom is nearer
-	kOrientationDownOver = 1,
+	kCCTransitionOrientationDownOver = 1,
+
+	// Deprecated
+//	kOrientationLeftOver = kCCTransitionOrientationLeftOver,
+//	kOrientationRightOver = kCCTransitionOrientationRightOver,
+//	kOrientationUpOver = kCCTransitionOrientationUpOver,
+//	kOrientationDownOver = kCCTransitionOrientationDownOver,
 } tOrientation;
 
 /** Base class for CCTransition scenes
@@ -67,7 +74,7 @@ typedef enum {
 -(id) initWithDuration:(ccTime) t scene:(CCScene*)s;
 /** called after the transition finishes */
 -(void) finish;
-/** used by some transitions to hide the outter scene */
+/** used by some transitions to hide the outer scene */
 -(void) hideOutShowIn;
 @end
 
@@ -86,17 +93,21 @@ typedef enum {
 
 
 /** CCTransitionRotoZoom:
- Rotate and zoom out the outgoing scene, and then rotate and zoom in the incoming 
+ Rotate and zoom out the outgoing scene, and then rotate and zoom in the incoming
  */
 @interface CCTransitionRotoZoom : CCTransitionScene
 {}
+// needed for BrdigeSupport
+-(id) init;
 @end
 
 /** CCTransitionJumpZoom:
- Zoom out and jump the outgoing scene, and then jump and zoom in the incoming 
+ Zoom out and jump the outgoing scene, and then jump and zoom in the incoming
 */
 @interface CCTransitionJumpZoom : CCTransitionScene
 {}
+// needed for BrdigeSupport
+-(id) init;
 @end
 
 /** CCTransitionMoveInL:
@@ -115,13 +126,17 @@ typedef enum {
  */
 @interface CCTransitionMoveInR : CCTransitionMoveInL
 {}
+// Needed for BridgeSupport
+-(void) initScenes;
 @end
 
 /** CCTransitionMoveInT:
  Move in from to the top the incoming scene.
  */
-@interface CCTransitionMoveInT : CCTransitionMoveInL 
+@interface CCTransitionMoveInT : CCTransitionMoveInL
 {}
+// Needed for BridgeSupport
+-(void) initScenes;
 @end
 
 /** CCTransitionMoveInB:
@@ -129,6 +144,8 @@ typedef enum {
  */
 @interface CCTransitionMoveInB : CCTransitionMoveInL
 {}
+// Needed for BridgeSupport
+-(void) initScenes;
 @end
 
 /** CCTransitionSlideInL:
@@ -138,15 +155,17 @@ typedef enum {
 {}
 /** initializes the scenes */
 -(void) initScenes;
-/** returns the action that will be performed by the incomming and outgoing scene */
+/** returns the action that will be performed by the incoming and outgoing scene */
 -(CCActionInterval*) action;
 @end
 
 /** CCTransitionSlideInR:
  Slide in the incoming scene from the right border.
  */
-@interface CCTransitionSlideInR : CCTransitionSlideInL 
+@interface CCTransitionSlideInR : CCTransitionSlideInL
 {}
+// Needed for BridgeSupport
+-(void) initScenes;
 @end
 
 /** CCTransitionSlideInB:
@@ -154,6 +173,8 @@ typedef enum {
  */
 @interface CCTransitionSlideInB : CCTransitionSlideInL
 {}
+// Needed for BridgeSupport
+-(void) initScenes;
 @end
 
 /** CCTransitionSlideInT:
@@ -161,6 +182,8 @@ typedef enum {
  */
 @interface CCTransitionSlideInT : CCTransitionSlideInL
 {}
+// Needed for BridgeSupport
+-(void) initScenes;
 @end
 
 /**
@@ -168,6 +191,8 @@ typedef enum {
  */
 @interface CCTransitionShrinkGrow : CCTransitionScene <CCTransitionEaseScene>
 {}
+// needed for BrdigeSupport
+-(id) init;
 @end
 
 /** CCTransitionFlipX:
@@ -176,6 +201,8 @@ typedef enum {
  */
 @interface CCTransitionFlipX : CCTransitionSceneOriented
 {}
+// needed for BrdigeSupport
+-(id) init;
 @end
 
 /** CCTransitionFlipY:
@@ -184,6 +211,8 @@ typedef enum {
  */
 @interface CCTransitionFlipY : CCTransitionSceneOriented
 {}
+// needed for BrdigeSupport
+-(id) init;
 @end
 
 /** CCTransitionFlipAngular:
@@ -192,6 +221,8 @@ typedef enum {
  */
 @interface CCTransitionFlipAngular : CCTransitionSceneOriented
 {}
+// needed for BrdigeSupport
+-(id) init;
 @end
 
 /** CCTransitionZoomFlipX:
@@ -200,6 +231,8 @@ typedef enum {
  */
 @interface CCTransitionZoomFlipX : CCTransitionSceneOriented
 {}
+// needed for BrdigeSupport
+-(id) init;
 @end
 
 /** CCTransitionZoomFlipY:
@@ -208,6 +241,8 @@ typedef enum {
  */
 @interface CCTransitionZoomFlipY : CCTransitionSceneOriented
 {}
+// needed for BrdigeSupport
+-(id) init;
 @end
 
 /** CCTransitionZoomFlipAngular:
@@ -216,6 +251,8 @@ typedef enum {
  */
 @interface CCTransitionZoomFlipAngular : CCTransitionSceneOriented
 {}
+// needed for BrdigeSupport
+-(id) init;
 @end
 
 /** CCTransitionFade:
@@ -241,6 +278,8 @@ typedef enum {
 @class CCRenderTexture;
 @interface CCTransitionCrossFade : CCTransitionScene
 {}
+// needed for BrdigeSupport
+-(id) init;
 @end
 
 /** CCTransitionTurnOffTiles:
@@ -248,6 +287,8 @@ typedef enum {
  */
 @interface CCTransitionTurnOffTiles : CCTransitionScene <CCTransitionEaseScene>
 {}
+// needed for BrdigeSupport
+-(id) init;
 @end
 
 /** CCTransitionSplitCols:
@@ -263,6 +304,8 @@ typedef enum {
  */
 @interface CCTransitionSplitRows : CCTransitionSplitCols
 {}
+// Needed for BridgeSupport
+-(CCActionInterval*) action;
 @end
 
 /** CCTransitionFadeTR:
@@ -278,6 +321,7 @@ typedef enum {
  */
 @interface CCTransitionFadeBL : CCTransitionFadeTR
 {}
+-(CCActionInterval*) actionWithSize:(ccGridSize) vector;
 @end
 
 /** CCTransitionFadeUp:
@@ -285,6 +329,7 @@ typedef enum {
  */
 @interface CCTransitionFadeUp : CCTransitionFadeTR
 {}
+-(CCActionInterval*) actionWithSize: (ccGridSize) v;
 @end
 
 /** CCTransitionFadeDown:
@@ -292,4 +337,5 @@ typedef enum {
  */
 @interface CCTransitionFadeDown : CCTransitionFadeTR
 {}
+-(CCActionInterval*) actionWithSize: (ccGridSize) v;
 @end
