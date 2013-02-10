@@ -32,8 +32,6 @@ Usage
     //Make sure you disable onExit or similar.
 ```
 
-If you need to configure the HUD you can do this by using the MBProgressHUD reference that showHUDAddedTo:animated: returns. 
-
 -------
 License
 =======
